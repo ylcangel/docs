@@ -1,0 +1,71 @@
+显示汇编
+x/i $pc，x/i main ,i前面可以带数字，代表显示多少行
+
+gdb查看指定地址的内存地址的值：
+examine 简写 x-----使用gdb> help x 来查看使用方式
+     x/ (n,f,u为可选参数)
+n: 需要显示的内存单元个数，也就是从当前地址向后显示几个内存单元的内容，一个内存单元的大小由后面的u定义
+f：显示格式
+               x(hex) 按十六进制格式显示变量。
+               d(decimal) 按十进制格式显示变量。
+               u(unsigned decimal) 按十进制格式显示无符号整型。
+               o(octal) 按八进制格式显示变量。
+               t(binary) 按二进制格式显示变量。
+               a(address) 按十六进制格式显示变量。
+               c(char) 按字符格式显示变量。
+               f(float) 按浮点数格式显示变量
+u：每个单元的大小，按字节数来计算。默认是4 bytes。
+GDB会从指定内存地址开始读取指定字节，并把其当作一个值取出来，并使用格式f来显示
+               b:1 byte     h:2 bytes     w:4 bytes g:8 bytes
+     比如x/3uh 0x54320表示从内存地址0x54320读取内容，h表示以双字节为单位，3表示输出3个单位，u表示按照十六进制显示。
+    from http://www.cnblogs.com/super119/archive/2011/03/26/1996125.html
+
+
+gdb打印表达式的值：print/f 表达式
+f是输出的格式，x/d/u/o/t/a/c/f
+
+表达式可以是当前程序的const常量，变量，函数等内容，但是GDB不能使用程序中所定义的宏
+查看当前程序栈的内容: x/10x $sp-->打印stack的前10个元素
+查看当前程序栈的信息: info frame----list general info about the frame
+查看当前程序栈的参数: info args---lists arguments to the function
+查看当前程序栈的局部变量: info locals---list variables stored in the frame
+查看当前寄存器的值：info registers(不包括浮点寄存器) info all-registers(包括浮点寄存器)
+查看当前栈帧中的异常处理器：info catch(exception handlers) 
+
+
+打印当前指令：display/i $pc
+查看栈顶附近12个指针处的内容：x/12x $sp
+
+gdb常用的调试指令：
+n： 执行一行源代码但不进入函数内部
+ni: 执行一行汇编代码但不进入函数内部
+s： 执行一行源代码而且进入函数内部 
+si: 执行一行汇编代码而且进入函数内部 
+c: 继续执行到下一个断点 
+b *地址: 下断点 
+directory+源码所在目录：加载程序源码 
+set follow-fork-mode parent ：只调试主进程 
+stack: 显示栈信息 
+x ： 按十六进制格式显示内存数据，其中x/{字节数}x 以16进制显示指定地址处的数据;{字节数}表示字节数制定（b 单字节；h 双字节；w 四字节；g 八字节；默认为四字节）
+
+
+p 打印
+p printf ：将会打印printf地址
+p execve: 将会打印execve地址
+p/x execve - getuid：将会计算execve-getuid的偏移
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+64位汇编
+当参数少于7个时， 参数从左到右放入寄存器: rdi, rsi, rdx, rcx, r8, r9。
+当参数为7个以上时， 前 6 个与前面一样， 但后面的依次从 “右向左” 放入栈中，即和32位汇编一样。
+
+参数个数大于 7 个的时候
+H(a, b, c, d, e, f, g, h);
+a->%rdi, b->%rsi, c->%rdx, d->%rcx, e->%r8, f->%r9
+h->8(%esp)
+g->(%esp)
+call H
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+You can see where the GOT entry for a function is by running:
+objdump --dynamic-reloc binary

