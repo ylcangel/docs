@@ -1,0 +1,9 @@
+www.frida.re
+
+1. Install from prebuilt binaries
+This is the recommended way to get started. All you need to do is:
+
+pip install frida-tools # CLI tools
+pip install frida       # Python bindings
+npm install frida       # Node.js bindings
+You may also download pre-built binaries for various operating systems from Frida's releases page on GitHub.

@@ -1,8 +1,7 @@
 ﻿
 
 adb forward tcp:5005 jdwp:20058 , 让AS可以attach上这个端口
-adb shell am start -D -n com.eg.android.AlipayGphone/.AlipayLogin
-
+adb shell am start -D -n pkgname/.activity
 
 3 JDB 的使用方式
 

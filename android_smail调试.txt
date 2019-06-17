@@ -1,0 +1,15 @@
+1、从https://bitbucket.org/JesusFreke/smali/downloads/下载最新smalidea、apktool
+2、打开AndroidStdtio点击File->Settings->Plugins->Instal plugins from disk，选择下载的zip包就行。安装完成后，AS提示重启生效。
+3、java -jar apktool.jar d -f 源文件 -o 输出文件夹，其中-f代表如果输出文件夹存在则先删除
+4、AS导入工程，选择上一步Apktool 的输出文件夹，一路next
+5、配置AS调试配置，Run->Edit Configurations，点击+号，新建一个针对该项目的remote类型调试器，如果默认端口被占用则需要 修改端口号
+6在工程内，选择src（smali文件夹） - Mark Directory as - Sources Root。
+7、adb shell am start -D -n  包名/.activity名
+8、打断点，点击Debug，弹出选择要attach的进程，它自动在断点处停下了。
+
+注意：
+1、apk不需要重打包设置manifest的debug=true标记
+2、别按错debug按钮，这个debug按钮（也就是Attach Debugger to Android Process），有两个位置有一个是Run菜单最底下的哪个按钮
+（千万别按成Attach to Process，这个是attach 到 pc的），另一个在菜单右下方，一个虫子图标里面有一个指向右上角的箭头（我的版本是AS3.4.1）
+
+我之前搞了半天都失败，找不到原因，后来发现是debug按钮弄错了。
