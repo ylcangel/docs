@@ -8,7 +8,7 @@
 8、打断点，点击Debug，弹出选择要attach的进程，它自动在断点处停下了。
 
 注意：
-1、apk不需要重打包设置manifest的debug=true标记
+1、apk需要重打包设置manifest的debug=true标记(application标签android:debuggable="true")
 2、别按错debug按钮，这个debug按钮（也就是Attach Debugger to Android Process），有两个位置有一个是Run菜单最底下的哪个按钮
 （千万别按成Attach to Process，这个是attach 到 pc的），另一个在菜单右下方，一个虫子图标里面有一个指向右上角的箭头（我的版本是AS3.4.1）
 
