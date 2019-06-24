@@ -1,6 +1,4 @@
-﻿
-
-adb forward tcp:5005 jdwp:20058 , 让AS可以attach上这个端口
+﻿adb forward tcp:5005 jdwp:20058 , 让AS可以attach上这个端口
 adb shell am start -D -n pkgname/.activity
 
 3 JDB 的使用方式
@@ -13,5 +11,12 @@ JDB 一般位于你的 JDK 安装目录下面，可以直接运行，因为 JDB 
 通过 adb forward tcp:123456 jdwp:pid (第一步所得到的 PID )设置使用 123456 端口来和移动设备上面的App VMs（其实是 adbd）来通信。
 执行 jdb -attach localhost:123456 将 jdb attach 到本机的 123456 端口。
 这样一个 JDB 到移动设备 App VMs 的连接就成了，可以使用 JDB 提供的各种命令来和 App VMs 交互。
-
 jdb -connect com.sun.jdi.SocketAttach:hostname=127.0.0.1,port=8700
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+从启动开始，让ida attach apk的正确姿势是（不需要借助ddms）：
+am start -D -n xxx
+adb forward tcp:port jdwp:pid
+ida debugger attach 进程，点击continue process按钮
+jdb -connect com.sun.jdi.SocketAttach:hostname=127.0.0.1,port=port
+---------------------------------------------------------------------------------------------------------------------------------------------
