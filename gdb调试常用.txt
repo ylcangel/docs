@@ -66,6 +66,10 @@ h->8(%esp)
 g->(%esp)
 call H
 
+32位汇编
+arm r0-r3前四个参数，第五个参数sp[0], 第六个sp[4]
+x86 cdecl、stdcall都是靠栈传递参数（从右到左）eax做返回值，fastcall中第一个第二个参数用EDX、ECX传递
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 You can see where the GOT entry for a function is by running:
 objdump --dynamic-reloc binary
