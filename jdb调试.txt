@@ -14,7 +14,7 @@ JDB 一般位于你的 JDK 安装目录下面，可以直接运行，因为 JDB 
 jdb -connect com.sun.jdi.SocketAttach:hostname=127.0.0.1,port=8700
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
-从启动开始，让ida attach apk的正确姿势是（不需要借助ddms）：
+从启动开始，让ida attach apk的正确姿势是（不需要借助ddms，app的manifest必须是true或系统属性ro.debuggable=1）：
 am start -D -n xxx
 adb forward tcp:port jdwp:pid
 ida debugger attach 进程，点击continue process按钮
