@@ -1,7 +1,7 @@
-﻿adb forward tcp:5005 jdwp:20058 , 让AS可以attach上这个端口
+﻿﻿adb forward tcp:5005 jdwp:20058 , 让AS可以attach上这个端口
 adb shell am start -D -n pkgname/.activity
 
-3 JDB 的使用方式
+JDB 的使用方式
 
 上面说了这么多，其实都是为了讲 JDB 的使用原理做的铺垫，JDB 其实是 JDWP 协议中所讲的 Debugger，
 它运行在 develop machine 上面，它和移动设备上面的 App VMs 通过 JDWP 协议来通信，
@@ -15,8 +15,17 @@ jdb -connect com.sun.jdi.SocketAttach:hostname=127.0.0.1,port=8700
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
 从启动开始，让ida attach apk的正确姿势是（不需要借助ddms，app的manifest必须是true或系统属性ro.debuggable=1）：
-am start -D -n xxx
+am start -D -n xxx(包名/MainActivity)
 adb forward tcp:port jdwp:pid
 ida debugger attach 进程，点击continue process按钮
 jdb -connect com.sun.jdi.SocketAttach:hostname=127.0.0.1,port=port
----------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+#ida调试下断加载JNI_OnLoad导出函数art::JavaVMExt::LoadNativeLibrary(string， classloader， string);
+5.0是在art/runtime/jni_internal.cc
+6.0实在art/runtime/java_vm_ext.cc
+首先通过string 可以获得要加载的库，5.0调用JNI_Onload下断的点
+libart.so:B4DD560E BLX             R7 ; // 对应文件偏移1e660e
+
+#ida调试下断linker调用init_array 导出函数CallArray("DT_INIT_ARRAY", init_array, init_array_count, false);
+#ida调试下断linker调用pre_init_array 导出函数CallArray("DT_PREINIT_ARRAY", preinit_array, preinit_array_count, false);
